@@ -41,9 +41,12 @@ end)
 
 -- Enable break indent
 vim.opt.breakindent = true
-
 vim.opt.expandtab = true
 vim.opt.smartindent = true
+vim.opt.shiftwidth = 2
+
+-- Keep 8 line gap at the bottom
+vim.opt.scrolloff = 8
 
 -- Save undo history
 vim.opt.undofile = true
@@ -160,7 +163,45 @@ require('lazy').setup({
       'nvim-tree/nvim-web-devicons',
     },
     config = function()
-      require('nvim-tree').setup {}
+      -- NOTE: BEGINNING OF :BD / :Q FIX
+      vim.api.nvim_create_autocmd({ 'BufEnter', 'QuitPre' }, {
+        nested = false,
+        callback = function(e)
+          local tree = require('nvim-tree.api').tree
+          -- Nothing to do if tree is not opened
+          if not tree.is_visible() then
+            return
+          end
+          -- How many focusable windows do we have? (excluding e.g. incline status window)
+          local winCount = 0
+          for _, winId in ipairs(vim.api.nvim_list_wins()) do
+            if vim.api.nvim_win_get_config(winId).focusable then
+              winCount = winCount + 1
+            end
+          end
+          -- We want to quit and only one window besides tree is left
+          if e.event == 'QuitPre' and winCount == 2 then
+            vim.api.nvim_cmd({ cmd = 'qall' }, {})
+          end
+
+          -- :bd was probably issued an only tree window is left
+          -- Behave as if tree was closed (see `:h :bd`)
+          if e.event == 'BufEnter' and winCount == 1 then
+            -- Required to avoid "Vim:E444: Cannot close last window"
+            vim.defer_fn(function()
+              -- close nvim-tree: will go to the last buffer used before closing
+              tree.toggle { find_file = true, focus = true }
+              -- re-open nivm-tree
+              tree.toggle { find_file = true, focus = false }
+            end, 10)
+          end
+        end,
+      })
+      -- END OF BD FIX
+
+      require('nvim-tree').setup {
+        vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = 'nvimtree toggle window' }),
+      }
     end,
   },
   {
@@ -170,7 +211,7 @@ require('lazy').setup({
     dependencies = 'nvim-tree/nvim-web-devicons',
     config = function()
       require('bufferline').setup {
-        vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = 'nvimtree toggle window' }),
+        -- NOTE: These configs are to cycle between buffers
         vim.keymap.set('n', '<leader>]', '<cmd>BufferLineCycleNext<CR>', { desc = 'cycle to next buffer' }),
         vim.keymap.set('n', '<leader>[', '<cmd>BufferLineCyclePrev<CR>', { desc = 'cycle to prev buffer' }),
         options = {
@@ -192,7 +233,7 @@ require('lazy').setup({
     end,
   },
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  --'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -532,9 +573,9 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
+        pyright = {},
         clangd = {},
         -- gopls = {},
-        -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -575,6 +616,7 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
         'clang-format', -- Used to format C++ code
+        'black', -- Used to format Python code
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -623,7 +665,7 @@ require('lazy').setup({
         lua = { 'stylua' },
         cpp = { 'clang-format' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        python = { 'isort', 'black' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
