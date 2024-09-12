@@ -1,5 +1,3 @@
-vim.opt.guicursor = ''
-
 vim.opt.termguicolors = true
 
 vim.opt.number = true

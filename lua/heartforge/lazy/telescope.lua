@@ -54,6 +54,13 @@ return { -- Fuzzy Finder (files, lsp, etc)
       --   },
       -- },
       -- pickers = {}
+      defaults = {
+        mappings = {
+          i = {
+            ['<C-y>'] = require('telescope.actions').select_default,
+          },
+        },
+      },
       extensions = {
         ['ui-select'] = {
           require('telescope.themes').get_dropdown(),
