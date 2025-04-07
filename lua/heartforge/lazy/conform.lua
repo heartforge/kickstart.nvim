@@ -22,6 +22,9 @@ return { -- Autoformat
       lua = { 'stylua' },
       cpp = { 'clang-format' },
       python = { 'isort', 'black' },
+      js = { 'prettier' },
+      html = { 'prettier' },
+      css = { 'prettier' },
     },
   },
 }

@@ -168,6 +168,7 @@ return {
         'clang-format', -- Used to format C++ code
         'black', -- Used to format Python code
         'isort',
+        'prettier',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
